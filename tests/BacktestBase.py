@@ -14,22 +14,19 @@ from strategy.StockDataset import StockDataset_binary
 from strategy.Mlp import StockMLP
 
 
-class StockStrategyBacktester:
+class BaseBacktester:
     """股票策略回测器：使用前N天数据预测次日涨跌，在次日开盘时进行交易"""
 
-    def __init__(self, model_path, data_path, seq_len=20, threshold=0.5,
+    def __init__(self,
+                 seq_len=20, threshold=0.5,
                  initial_capital=100000.00, trade_amount_ratio=0.5):
         """
         初始化回测器
-        :param model_path: 预训练模型路径
-        :param data_path: 测试数据CSV路径
         :param seq_len: 输入序列长度（使用前N天数据）
         :param threshold: 预测阈值
         :param initial_capital: 初始资金
         :param trade_amount_ratio: 每次交易的资金比例（0-1之间）
         """
-        self.model_path = model_path
-        self.data_path = data_path
         self.seq_len = seq_len
         self.threshold = threshold
         self.initial_capital = initial_capital
@@ -37,16 +34,17 @@ class StockStrategyBacktester:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 初始化变量
+        self.model_path = None
         self.model = None
         self.data = None
         self.test_dataset = None
         self.predictions = None  # 存储预测结果的DataFrame
         self.portfolio = None  # 存储交易记录和资产变化
 
-    def load_data(self):
+    def load_data(self, data_path):
         """加载并预处理数据"""
-        print(f"📊 读取数据：{self.data_path}")
-        self.data = read_stock_data(self.data_path)
+        print(f"📊 读取数据：{data_path}")
+        self.data = read_stock_data(data_path)
         print("数据列名:", self.data.columns.tolist())
         print(f"数据总行数：{len(self.data)}")
 
@@ -58,18 +56,19 @@ class StockStrategyBacktester:
 
         return self
 
-    def load_model(self, num_features=9):
+    def load_model(self, model_path, num_features=9):
         """加载预训练模型"""
         print(f"\n💻 使用设备：{self.device}")
         # 初始化模型
+        self.model_path = model_path
         self.model = StockMLP(seq_len=self.seq_len, num_features=num_features).to(self.device)
 
         # 加载模型权重
-        checkpoint = torch.load(self.model_path, map_location=self.device)
+        checkpoint = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.model.eval()  # 设置为评估模式
 
-        print(f"✅ 成功加载模型：{self.model_path}")
+        print(f"✅ 成功加载模型：{model_path}")
         print(f"   模型训练时的Epoch：{checkpoint['epoch']}")
         print(f"   模型训练时的Val Acc：{checkpoint['val_acc']:.2f}%")
 
@@ -270,7 +269,11 @@ class StockStrategyBacktester:
         print("\n" + "=" * 60)
         print("💹 策略收益表现")
         print("=" * 60)
-        print(f"初始资金：{self.initial_capital:.2f}元")
+        print(f"初始资金：{self.initial_capital:.2f}元, 单次交易资金比例：{self.trade_amount_ratio:.0%}")
+        # 计算交易次数
+        buy_count = sum(1 for action in self.portfolio['action'] if '买入' in action and '未买入' not in action)
+        sell_count = sum(1 for action in self.portfolio['action'] if '卖出' in action and '未卖出' not in action)
+        print(f"总买入次数：{buy_count}, 总卖出次数：{sell_count}")
 
         final_assets = self.portfolio['total_assets'].iloc[-1]
         print(f"最终总资产：{final_assets:.2f}元")
@@ -299,12 +302,6 @@ class StockStrategyBacktester:
         else:
             print("portfolio中缺少'date'列，无法计算年化收益率")
 
-        # 计算交易次数
-        buy_count = sum(1 for action in self.portfolio['action'] if '买入' in action and '未买入' not in action)
-        sell_count = sum(1 for action in self.portfolio['action'] if '卖出' in action and '未卖出' not in action)
-        print(f"总买入次数：{buy_count}")
-        print(f"总卖出次数：{sell_count}")
-        print(f"交易资金比例：{self.trade_amount_ratio:.0%}")
         print("=" * 60)
 
     def plot_results(self, num_points=None):
@@ -323,10 +320,12 @@ class StockStrategyBacktester:
         plot_data['date'] = pd.to_datetime(plot_data['date'])
 
         # 创建一个包含3个子图的图表
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(16, 18), sharex=True)
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(9, 6), sharex=True)
+        for ax in [ax1, ax2, ax3]:
+            ax.minorticks_on()  # 开启次刻度
+            ax.grid(which='both', linestyle='--', linewidth=0.5)  # 主/次刻度都画
 
         # 子图1：K线图和交易信号
-        # 绘制K线图
         # 上涨时用红色，下跌时用绿色
         up = plot_data[plot_data.close_price >= plot_data.open_price]
         down = plot_data[plot_data.close_price < plot_data.open_price]
@@ -358,7 +357,6 @@ class StockStrategyBacktester:
         ax1.set_ylabel('价格', fontsize=12)
         ax1.set_title('K线图与交易信号', fontsize=14, fontweight='bold')
         ax1.legend()
-        ax1.grid(True, alpha=0.3)
 
         # 子图2：预测与实际对比
         ax2.plot(plot_data['date'], plot_data['true_label'], label='实际涨跌',
@@ -368,7 +366,6 @@ class StockStrategyBacktester:
         ax2.set_ylabel('涨跌标签（0=跌，1=涨）', fontsize=12)
         ax2.set_title('实际涨跌与预测涨跌对比', fontsize=14, fontweight='bold')
         ax2.legend()
-        ax2.grid(True, alpha=0.3)
         ax2.set_ylim(-0.2, 1.2)
 
         # 子图3：资产变化
@@ -380,7 +377,6 @@ class StockStrategyBacktester:
         ax3.set_ylabel('资产价值 (元)', fontsize=12)
         ax3.set_title('资产变化曲线', fontsize=14, fontweight='bold')
         ax3.legend()
-        ax3.grid(True, alpha=0.3)
 
         # 设置x轴日期格式
         plt.gcf().autofmt_xdate()
@@ -416,9 +412,7 @@ if __name__ == "__main__":
     TRADE_AMOUNT_RATIO = 0.7  # 每次交易使用多少可用资金/持股
 
     # 创建回测器实例并执行回测流程
-    backtester = StockStrategyBacktester(
-        model_path=MODEL_PATH,
-        data_path=DATA_PATH,
+    backtester = BaseBacktester(
         seq_len=SEQ_LEN,
         threshold=THRESHOLD,
         initial_capital=INITIAL_CAPITAL,
@@ -426,8 +420,8 @@ if __name__ == "__main__":
     )
 
     # 执行完整回测流程
-    backtester.load_data() \
-        .load_model(num_features=9) \
+    backtester.load_data(DATA_PATH) \
+        .load_model(MODEL_PATH, num_features=9) \
         .generate_predictions() \
         .run_backtest()
 

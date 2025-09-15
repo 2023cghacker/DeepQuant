@@ -141,8 +141,8 @@ if __name__ == "__main__":
     # ----------------------
     # 配置回测参数（需根据你的实际情况修改）
     # ----------------------
-    NEW_CSV_PATH = "D:\lc\githubCode\DeepQuant\data\\000001_20250719_20250912.csv"  # 新数据CSV路径（如8月数据）
-    MODEL_PATH = "D:\lc\githubCode\DeepQuant\output\\09151514\mlp_09151514_ep260_55.95.pth"  # 预训练模型路径
+    NEW_CSV_PATH = "/data/000001_20250719_20250912.csv"  # 新数据CSV路径（如8月数据）
+    MODEL_PATH = "/output/09151514/mlp_09151514_ep260_55.95.pth"  # 预训练模型路径
     SEQ_LEN = 20  # 输入序列长度（必须与训练时一致！）
     THRESHOLD = 0.5  # 涨跌判断阈值（默认0.5，可根据需求调整）
 

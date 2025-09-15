@@ -2,8 +2,10 @@ import pandas as pd
 import mplfinance as mpf
 from datetime import datetime
 import matplotlib
+
 matplotlib.use('TkAgg')  # 切换到TkAgg后端
 import matplotlib.pyplot as plt
+
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
@@ -21,15 +23,6 @@ def read_stock_data(csv_file):
     # 确保数据按日期排序
     df = df.sort_index()
 
-    # # 重命名列以符合mplfinance的要求
-    # df = df.rename(columns={
-    #     'open': 'Open',
-    #     'high': 'High',
-    #     'low': 'Low',
-    #     'close': 'Close',
-    #     'vol': 'Volume'
-    # })
-
     return df
 
 
@@ -43,6 +36,14 @@ def plot_kline(df, start_date, end_date, title="股票K线图"):
     end_date: 结束日期，格式如'2018-07-31'
     title: 图表标题
     """
+    # 重命名列以符合mplfinance的要求
+    df = df.rename(columns={
+        'open': 'Open',
+        'high': 'High',
+        'low': 'Low',
+        'close': 'Close',
+        'vol': 'Volume'
+    })
     # 转换日期格式
     start = datetime.strptime(start_date, '%Y-%m-%d')
     end = datetime.strptime(end_date, '%Y-%m-%d')
