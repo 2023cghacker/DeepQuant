@@ -1,7 +1,9 @@
 import tushare as ts
 
-# 设置token并初始化接口
-token = "27e555ce9a28a32a27d812d05e887d4636a9e82026a29506bcf97faa"
+txt_file_path = "../config/token.txt"  # 示例：若文件和代码在同一文件夹，直接写文件名
+with open(txt_file_path, "r", encoding="utf-8") as file:
+    token = file.read().strip()
+
 ts.set_token(token)
 pro = ts.pro_api()
 

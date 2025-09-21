@@ -4,4 +4,5 @@
 # 忽略所有 .csv 数据文件
 *.csv
 
-data_processor/DataDownload.py
+# 忽略所有 .txt 数据文件
+*.txt
