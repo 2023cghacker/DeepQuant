@@ -1,7 +1,7 @@
 import tushare as ts
 
 # 设置token并初始化接口
-token = ""
+token = "27e555ce9a28a32a27d812d05e887d4636a9e82026a29506bcf97faa"
 ts.set_token(token)
 pro = ts.pro_api()
 

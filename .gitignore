@@ -3,3 +3,5 @@
 
 # 忽略所有 .csv 数据文件
 *.csv
+
+data_processor/DataDownload.py
