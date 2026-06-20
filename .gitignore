@@ -6,6 +6,7 @@
 
 # 忽略所有 .txt 数据文件
 *.txt
+!config/token.txt.example
 
 # PyCharm / IntelliJ IDEA
 .idea/

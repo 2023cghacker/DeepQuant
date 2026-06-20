@@ -34,7 +34,7 @@ conda activate deepquant
 
 ### ② 准备数据
 
-1. 在 `config/token.txt` 写入 [Tushare Token](https://tushare.pro/)
+1. 复制 `config/token.txt.example` 为 `config/token.txt`，填入 [Tushare Token](https://tushare.pro/)
 2. 下载行情：
 
 ```bash
