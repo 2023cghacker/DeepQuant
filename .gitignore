@@ -6,3 +6,6 @@
 
 # 忽略所有 .txt 数据文件
 *.txt
+
+# PyCharm / IntelliJ IDEA
+.idea/
