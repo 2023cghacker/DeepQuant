@@ -1,12 +1,12 @@
 # 📈 DeepQuant
 
-> 基于 PyTorch 的 A 股量化研究：**数据获取 → 深度学习建模 → 预测回测 → 策略模拟**
+> 基于 PyTorch 的 A 股量化研究：**数据获取 → 深度学习建模 → 预测评估 → 策略模拟**
 
 ```
-  Tushare 行情          训练 MLP / LSTM         View 可视化
-      │                      │                      │
-      ▼                      ▼                      ▼
-  data/*.csv  ──────►  output/*.pth  ──────►  K线 / 预测 / 回测
+  data/              strategy/                    output/                 View
+  行情 CSV    →    deeplearning  训练 & 评估   →   models/     →    K线 / 预测
+                   backtest      交易模拟      →   backtests/  →    策略回测
+                                                reports/      →    其他分析
 ```
 
 ---
@@ -16,14 +16,14 @@
 | 模块 | 说明 |
 |------|------|
 | 📥 **数据** | [Tushare](https://tushare.pro/) 拉取 A 股日线，K 线可视化 |
-| 🧠 **模型** | `StockLSTM` 预测收益 · `StockMLP` 二分类预测涨跌 |
-| 📊 **回测** | Accuracy / Precision / Recall / F1 + 模拟交易收益 |
+| 🧠 **模型** | 深度学习建模，预测价格走势与涨跌方向 |
+| 📊 **回测** | 预测指标（Accuracy / F1 等）+ 模拟交易收益 |
 
 ---
 
 ## 🚀 快速开始
 
-> 推荐路径：**装好环境 → 准备数据与模型 → 打开 View 界面**，无需记命令行。
+> 推荐路径：**装好环境 → 准备数据与模型 → 打开 View 界面**
 
 ### ① 安装环境
 
@@ -41,15 +41,15 @@ conda activate deepquant
 python data_processor/DataDownload.py
 ```
 
-> CSV 会保存到 `data/` 目录。
+> CSV 保存至 `data/` 目录。
 
 ### ③ 准备模型（首次使用）
 
 ```bash
-python strategy/Mlp.py    # 训练 MLP，权重输出到 output/
+python strategy/deeplearning/Mlp.py    # 训练模型，产物写入 output/models/
 ```
 
-> 若 `output/` 里已有 `.pth` 文件，可跳过此步。
+> 若 `output/models/` 下已有 `.pth` 权重，可跳过此步。
 
 ### ④ 启动可视化界面 🖥️
 
@@ -73,40 +73,67 @@ python visualization/view.py
 
 ```
 DeepQuant/
-├── 📂 data_processor/     数据下载 & K 线绘图
-├── 📂 strategy/           数据集、LSTM/MLP 训练、模型回测
-├── 📂 tests/              策略交易回测（买卖信号 + 资产曲线）
-├── 📂 visualization/      View 图形界面（推荐入口 ⭐）
-├── 📂 data/               行情 CSV（git 忽略）
-├── 📂 output/             模型权重 .pth（git 忽略）
-└── 📂 config/             Tushare Token
+├── 📂 data/                      原始行情 CSV（git 忽略）
+├── 📂 data_processor/            数据下载 & K 线绘图
+├── 📂 strategy/
+│   ├── 📂 deeplearning/         建模与训练：数据集、网络、训练脚本、模型评估
+│   └── 📂 backtest/             策略实操：买卖信号、资金曲线、交易回测
+├── 📂 output/                    实验产物（git 忽略）
+│   ├── 📂 models/               训练相关：权重 .pth、超参、loss 曲线等
+│   ├── 📂 backtests/            交易相关：持仓记录、成交明细、资产曲线、收益指标
+│   └── 📂 reports/              其他：跨实验对比、导出图表、分析笔记等
+├── 📂 visualization/             View 图形界面（推荐入口 ⭐）
+└── 📂 config/                    Tushare Token
 ```
 
-### 🔧 命令行用法
+#### `strategy/deeplearning/` — 建模 & 训练
 
-各脚本可独立运行，适合改参数、批量实验：
+| 文件 | 作用 |
+|------|------|
+| `StockDataset.py` | 构造时序样本与标签 |
+| `Mlp.py` / `Lstm.py` … | 各模型定义与训练入口 |
+| `model_backtest.py` | 加载权重，评估预测指标（非交易回测） |
+
+#### `strategy/backtest/` — 策略 & 交易模拟
+
+| 文件 | 作用 |
+|------|------|
+| `BacktestBase.py` | 预测信号 → 模拟买卖 → 资产曲线 |
+| `SyntheticDataset.py` | 合成数据（调试辅助） |
+
+#### `output/` 三层分工
+
+| 目录 | 典型内容 |
+|------|----------|
+| **`models/`** | checkpoint（`.pth`）、训练 config、loss/acc 曲线、验证集指标 |
+| **`backtests/`** | 每日资产、买卖记录、预测 vs 实际、夏普/回撤/总收益等 |
+| **`reports/`** | 多模型对比表、手动导出的图表、实验日志等杂项 |
+
+> 💡 建议每次实验在对应目录下建子文件夹（如 `models/20250620_run1/`），便于追溯。
+
+### 🔧 命令行用法
 
 ```bash
 # 📥 下载数据
 python data_processor/DataDownload.py
 
-# 🧠 训练模型
-python strategy/Lstm.py          # LSTM：预测收益率
-python strategy/Mlp.py           # MLP：预测涨跌（默认）
-
-# 📊 回测
-python strategy/model_backtest.py   # 模型指标回测
-python tests/BacktestBase.py        # 策略交易回测
-
-# 📉 单独画 K 线（无需 GUI）
+# 📉 单独画 K 线
 python data_processor/DataPlot.py
+
+# 🧠 训练模型（deeplearning/ 下各脚本对应不同模型）
+python strategy/deeplearning/Lstm.py
+python strategy/deeplearning/Mlp.py
+
+# 📊 评估 & 回测
+python strategy/deeplearning/model_backtest.py   # 模型预测指标
+python strategy/backtest/BacktestBase.py         # 策略交易模拟
 ```
 
-> ⚠️ 运行前请修改脚本内的数据路径、模型路径，`seq_len` 等超参数需与训练时一致。
+> ⚠️ 运行前请修改脚本内的数据路径、模型路径等；`seq_len` 等超参数需与训练时一致。
 
 ### 🖼️ View 界面说明
 
-`view.py` 是薄 UI 层，绘图与回测逻辑复用 `DataPlot`、`model_backtest`、`BacktestBase`，GUI 与命令行看到的是同一套结果。
+`view.py` 是可视化 GUI，绘图与回测逻辑复用 `data_processor`、`strategy/deeplearning`、`strategy/backtest`，与命令行看到的是同一套结果。
 
 ---
 
