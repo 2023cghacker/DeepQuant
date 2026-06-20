@@ -73,16 +73,21 @@ python visualization/view.py
 
 ```
 DeepQuant/
-├── 📂 data/                      原始行情 CSV（git 忽略）
+├── 📂 data/                      原始行情 CSV
+│
 ├── 📂 data_processor/            数据下载 & K 线绘图
+│
 ├── 📂 strategy/
 │   ├── 📂 deeplearning/         建模与训练：数据集、网络、训练脚本、模型评估
 │   └── 📂 backtest/             策略实操：买卖信号、资金曲线、交易回测
-├── 📂 output/                    实验产物（git 忽略）
+│
+├── 📂 output/                    实验产物
 │   ├── 📂 models/               训练相关：权重 .pth、超参、loss 曲线等
 │   ├── 📂 backtests/            交易相关：持仓记录、成交明细、资产曲线、收益指标
 │   └── 📂 reports/              其他：跨实验对比、导出图表、分析笔记等
+│
 ├── 📂 visualization/             View 图形界面（推荐入口 ⭐）
+│
 └── 📂 config/                    Tushare Token
 ```
 
