@@ -8,5 +8,9 @@
 *.txt
 !config/token.txt.example
 
+# Python 缓存
+__pycache__/
+*.py[cod]
+
 # PyCharm / IntelliJ IDEA
 .idea/
