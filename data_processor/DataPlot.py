@@ -3,11 +3,11 @@ import mplfinance as mpf
 from datetime import datetime
 import matplotlib
 
-matplotlib.use('TkAgg')  # 切换到TkAgg后端
+matplotlib.use("TkAgg")  # 切换到TkAgg后端
 import matplotlib.pyplot as plt
 
-plt.rcParams['font.sans-serif'] = ['SimHei']
-plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams["font.sans-serif"] = ["SimHei"]
+plt.rcParams["axes.unicode_minus"] = False
 
 
 def read_stock_data(csv_file):
@@ -16,9 +16,9 @@ def read_stock_data(csv_file):
     df = pd.read_csv(csv_file)
 
     # 将trade_date转换为datetime格式并设置为索引
-    df['trade_date'] = pd.to_datetime(df['trade_date'], format='%Y%m%d')
-    df['date'] = df['trade_date']
-    df = df.set_index('date')
+    df["trade_date"] = pd.to_datetime(df["trade_date"], format="%Y%m%d")
+    df["date"] = df["trade_date"]
+    df = df.set_index("date")
 
     # 确保数据按日期排序
     df = df.sort_index()
@@ -38,16 +38,18 @@ def plot_kline(df, start_date, end_date, title="股票K线图", return_fig=False
     return_fig: 为 True 时返回 Figure 对象（供 GUI 嵌入），否则弹窗显示
     """
     # 重命名列以符合mplfinance的要求
-    df = df.rename(columns={
-        'open': 'Open',
-        'high': 'High',
-        'low': 'Low',
-        'close': 'Close',
-        'vol': 'Volume'
-    })
+    df = df.rename(
+        columns={
+            "open": "Open",
+            "high": "High",
+            "low": "Low",
+            "close": "Close",
+            "vol": "Volume",
+        }
+    )
     # 转换日期格式
-    start = datetime.strptime(start_date, '%Y-%m-%d')
-    end = datetime.strptime(end_date, '%Y-%m-%d')
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
 
     # 筛选指定日期范围内的数据
     mask = (df.index >= start) & (df.index <= end)
@@ -57,20 +59,18 @@ def plot_kline(df, start_date, end_date, title="股票K线图", return_fig=False
         raise ValueError("指定日期范围内没有数据")
 
     my_color = mpf.make_marketcolors(
-        up='red',  # 上涨K线颜色
-        down='green',  # 下跌K线颜色
-        edge='i',  # 边缘颜色与实体颜色一致
-        wick='i',  # 上下影线颜色与实体颜色一致
-        volume='in'  # 成交量颜色与K线颜色一致
+        up="red",  # 上涨K线颜色
+        down="green",  # 下跌K线颜色
+        edge="i",  # 边缘颜色与实体颜色一致
+        wick="i",  # 上下影线颜色与实体颜色一致
+        volume="in",  # 成交量颜色与K线颜色一致
     )
     my_style = mpf.make_mpf_style(
-        base_mpl_style='seaborn-v0_8',
-        marketcolors=my_color,
-        figcolor='white'
+        base_mpl_style="seaborn-v0_8", marketcolors=my_color, figcolor="white"
     )
 
     plot_kwargs = dict(
-        type='candle',
+        type="candle",
         mav=(5, 10, 20),
         volume=True,
         title=title,
@@ -86,7 +86,7 @@ def plot_kline(df, start_date, end_date, title="股票K线图", return_fig=False
         )
         return fig
 
-    plt.style.use('seaborn-v0_8-whitegrid')
+    plt.style.use("seaborn-v0_8-whitegrid")
     mpf.plot(
         df_filtered,
         **plot_kwargs,
@@ -99,12 +99,11 @@ def plot_kline(df, start_date, end_date, title="股票K线图", return_fig=False
 # 示例用法
 if __name__ == "__main__":
     # 读取股票数据
-    stock_data = read_stock_data('D:\lc\githubCode\DeepQuant\data\\000001_20250719_20250912.csv')
+    stock_data = read_stock_data(
+        "D:\lc\githubCode\DeepQuant\data\\000001_20250719_20250912.csv"
+    )
 
     # 绘制2023年1月至2023年6月的K线图
     plot_kline(
-        stock_data,
-        start_date='2025-07-19',
-        end_date='2025-09-12',
-        title="000001.SZ"
+        stock_data, start_date="2025-07-19", end_date="2025-09-12", title="000001.SZ"
     )
