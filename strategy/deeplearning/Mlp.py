@@ -1,8 +1,14 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 from data_processor.DataPlot import read_stock_data
 import numpy as np
-from strategy.StockDataset import StockDataset_earning, StockDataset_val, StockDataset_binary
+from strategy.deeplearning.StockDataset import StockDataset_ret, StockDataset_close, StockDataset_binary
 import torch
 import torch.nn as nn
 import numpy as np

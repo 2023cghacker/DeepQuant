@@ -60,8 +60,11 @@ def resolve_csv_date_range(csv_name: str) -> tuple[str, str]:
     if start and end:
         return start, end
     from data_processor.DataPlot import read_stock_data
+
     df = read_stock_data(str(DATA_DIR / csv_name))
-    return start or df.index[0].strftime("%Y-%m-%d"), end or df.index[-1].strftime("%Y-%m-%d")
+    return start or df.index[0].strftime("%Y-%m-%d"), end or df.index[-1].strftime(
+        "%Y-%m-%d"
+    )
 
 
 def list_model_files():
@@ -76,8 +79,12 @@ def list_model_files():
 def run_predict(csv_name, model_name, seq_len, threshold):
     import torch
     from data_processor.DataPlot import read_stock_data
-    from strategy.StockDataset import StockDataset_binary
-    from strategy.model_backtest import backtest_model, load_pretrained_model, plot_backtest_result
+    from strategy.deeplearning.StockDataset import StockDataset_binary
+    from strategy.backtest.model_backtest import (
+        backtest_model,
+        load_pretrained_model,
+        plot_backtest_result,
+    )
 
     csv_path = str(DATA_DIR / csv_name)
     model_path = str(OUTPUT_DIR / model_name)
@@ -86,10 +93,15 @@ def run_predict(csv_name, model_name, seq_len, threshold):
     df = read_stock_data(csv_path)
     dataset = StockDataset_binary(df, seq_len=seq_len, target="close", pred_horizon=1)
     model = load_pretrained_model(model_path, seq_len, 9, device)
-    _, pred_labels, true_labels, metrics = backtest_model(model, dataset, device, threshold)
+    _, pred_labels, true_labels, metrics = backtest_model(
+        model, dataset, device, threshold
+    )
 
     fig = plot_backtest_result(
-        true_labels, pred_labels, num_points=200, return_fig=True,
+        true_labels,
+        pred_labels,
+        num_points=200,
+        return_fig=True,
     )
 
     text = (
@@ -102,11 +114,13 @@ def run_predict(csv_name, model_name, seq_len, threshold):
 
 
 def run_backtest(csv_name, model_name, seq_len, threshold, capital, ratio):
-    from tests.BacktestBase import BaseBacktester
+    from strategy.backtest.BacktestBase import BaseBacktester
 
     bt = BaseBacktester(
-        seq_len=seq_len, threshold=threshold,
-        initial_capital=capital, trade_amount_ratio=ratio,
+        seq_len=seq_len,
+        threshold=threshold,
+        initial_capital=capital,
+        trade_amount_ratio=ratio,
     )
     bt.load_data(str(DATA_DIR / csv_name))
     bt.load_model(str(OUTPUT_DIR / model_name), num_features=9)
@@ -127,6 +141,50 @@ def run_backtest(csv_name, model_name, seq_len, threshold, capital, ratio):
         f"总收益: {total_return:.2f}%   最终资产: {final_assets:.2f}"
     )
     return fig, text
+
+
+class PlaceholderEntry(tk.Entry):
+    """带灰色占位提示的输入框（获焦清空，失焦且为空时恢复）"""
+
+    def __init__(self, master, placeholder, **kwargs):
+        super().__init__(master, **kwargs)
+        self.placeholder = placeholder
+        self._is_placeholder = False
+        self._default_fg = kwargs.get("fg", "black")
+        self._ph_fg = "grey"
+        self.bind("<FocusIn>", self._on_focus_in)
+        self.bind("<FocusOut>", self._on_focus_out)
+        self._show_placeholder()
+
+    def _show_placeholder(self):
+        self.delete(0, tk.END)
+        self.insert(0, self.placeholder)
+        self.config(fg=self._ph_fg)
+        self._is_placeholder = True
+
+    def _on_focus_in(self, _event=None):
+        if self._is_placeholder:
+            self.delete(0, tk.END)
+            self.config(fg=self._default_fg)
+            self._is_placeholder = False
+
+    def _on_focus_out(self, _event=None):
+        if not self.get().strip():
+            self._show_placeholder()
+
+    def get_value(self) -> str:
+        if self._is_placeholder:
+            return ""
+        return self.get().strip()
+
+    def set_value(self, value: str):
+        self.delete(0, tk.END)
+        if value:
+            self.config(fg=self._default_fg)
+            self._is_placeholder = False
+            self.insert(0, value)
+        else:
+            self._show_placeholder()
 
 
 class ChartPanel(ttk.Frame):
@@ -165,7 +223,9 @@ class DeepQuantApp(tk.Tk):
         self.status.pack(fill=tk.X, side=tk.BOTTOM)
 
     def _row(self, parent, label, widget, col=0):
-        ttk.Label(parent, text=label).grid(row=0, column=col * 2, sticky=tk.W, padx=(0, 4))
+        ttk.Label(parent, text=label).grid(
+            row=0, column=col * 2, sticky=tk.W, padx=(0, 4)
+        )
         widget.grid(row=0, column=col * 2 + 1, sticky=tk.W, padx=(0, 12))
 
     def _fill_combo(self, combo, items):
@@ -181,13 +241,13 @@ class DeepQuantApp(tk.Tk):
         bar.pack(fill=tk.X, pady=(0, 8))
 
         self.kline_csv = ttk.Combobox(bar, width=36, state="readonly")
-        self.kline_start = ttk.Entry(bar, width=12)
-        self.kline_end = ttk.Entry(bar, width=12)
+        self.kline_start = PlaceholderEntry(bar, width=12, placeholder="2018-07-01")
+        self.kline_end = PlaceholderEntry(bar, width=12, placeholder="2018-07-01")
         self.kline_btn = ttk.Button(bar, text="绘制 K 线", command=self._on_kline)
 
         self._row(bar, "数据文件", self.kline_csv, 0)
-        self._row(bar, "开始 (格式如'2018-07-01')", self.kline_start, 1)
-        self._row(bar, "结束 (格式如'2018-07-01')", self.kline_end, 2)
+        self._row(bar, "开始", self.kline_start, 1)
+        self._row(bar, "结束", self.kline_end, 2)
         self.kline_btn.grid(row=0, column=6, padx=4)
 
         self._fill_combo(self.kline_csv, list_csv_files())
@@ -277,10 +337,8 @@ class DeepQuantApp(tk.Tk):
             start, end = resolve_csv_date_range(csv_name)
         except Exception:
             return
-        self.kline_start.delete(0, tk.END)
-        self.kline_start.insert(0, start)
-        self.kline_end.delete(0, tk.END)
-        self.kline_end.insert(0, end)
+        self.kline_start.set_value(start)
+        self.kline_end.set_value(end)
 
     def _on_kline_csv_changed(self, _event=None):
         csv_name = self.kline_csv.get()
@@ -294,9 +352,10 @@ class DeepQuantApp(tk.Tk):
             return
         try:
             from data_processor.DataPlot import read_stock_data, plot_kline
+
             df = read_stock_data(str(DATA_DIR / csv_name))
-            start = self.kline_start.get().strip() or df.index[0].strftime("%Y-%m-%d")
-            end = self.kline_end.get().strip() or df.index[-1].strftime("%Y-%m-%d")
+            start = self.kline_start.get_value() or df.index[0].strftime("%Y-%m-%d")
+            end = self.kline_end.get_value() or df.index[-1].strftime("%Y-%m-%d")
             datetime.strptime(start, "%Y-%m-%d")
             datetime.strptime(end, "%Y-%m-%d")
             fig = plot_kline(df, start, end, csv_name, return_fig=True)
@@ -304,7 +363,9 @@ class DeepQuantApp(tk.Tk):
             self.status.config(text=f"K 线已绘制: {start} ~ {end}")
         except ValueError as e:
             if "does not match format" in str(e) or "unconverted data" in str(e):
-                messagebox.showerror("错误", "日期格式错误，请使用如 '2018-07-01' 的格式")
+                messagebox.showerror(
+                    "错误", "日期格式错误，请使用如 '2018-07-01' 的格式"
+                )
             else:
                 messagebox.showerror("错误", str(e))
         except Exception as e:
@@ -364,9 +425,13 @@ class DeepQuantApp(tk.Tk):
             daemon=True,
         ).start()
 
-    def _backtest_worker(self, csv_name, model_name, seq_len, threshold, capital, ratio):
+    def _backtest_worker(
+        self, csv_name, model_name, seq_len, threshold, capital, ratio
+    ):
         try:
-            fig, text = run_backtest(csv_name, model_name, seq_len, threshold, capital, ratio)
+            fig, text = run_backtest(
+                csv_name, model_name, seq_len, threshold, capital, ratio
+            )
             self.after(0, lambda: self._backtest_done(fig, text))
         except Exception as e:
             self.after(0, lambda: self._on_error("回测失败", e))

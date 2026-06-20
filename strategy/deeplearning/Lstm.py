@@ -1,9 +1,15 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
 from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 from data_processor.DataPlot import read_stock_data
 import numpy as np
 
-from strategy.StockDataset import StockDataset_earning, StockDataset_val
+from strategy.deeplearning.StockDataset import StockDataset_ret, StockDataset_close
 
 # =====================
 # 模型定义
@@ -19,7 +25,15 @@ from tests.SyntheticDataset import generate_sine_data, SyntheticDataset
 
 
 class StockLSTM(nn.Module):
-    def __init__(self, input_size=5, hidden_size=128, num_layers=3, output_size=1, dropout=0.3, bidirectional=True):
+    def __init__(
+        self,
+        input_size=5,
+        hidden_size=128,
+        num_layers=3,
+        output_size=1,
+        dropout=0.3,
+        bidirectional=True,
+    ):
         super(StockLSTM, self).__init__()
         self.lstm = nn.LSTM(
             input_size=input_size,
@@ -27,7 +41,7 @@ class StockLSTM(nn.Module):
             num_layers=num_layers,
             dropout=dropout,  # 在 LSTM 层之间加 Dropout，防止过拟合
             batch_first=True,
-            bidirectional=bidirectional
+            bidirectional=bidirectional,
         )
         lstm_out_size = hidden_size * (2 if bidirectional else 1)
 
@@ -53,6 +67,7 @@ class StockLSTM(nn.Module):
 
         out = self.fc2(out)  # [batch, 1]
         return out.squeeze(-1)  # [batch]
+
 
 # =====================
 # 训练逻辑
@@ -97,7 +112,9 @@ def train_model(dataset, batch_size=32, epochs=20, lr=1e-3):
                 val_loss += loss.item() * X.size(0)
         val_loss /= len(val_loader.dataset)
 
-        print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        print(
+            f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}"
+        )
 
     # return model
 
@@ -129,8 +146,8 @@ def plot_predictions(model, dataset, device, num_points=200):
     # print(f"reals={reals},preds={preds}")
 
     plt.figure(figsize=(12, 6))
-    plt.plot(reals, label="真实收盘价", color='black')
-    plt.plot(preds, label="预测收盘价", color='red', linestyle='--')
+    plt.plot(reals, label="真实收盘价", color="black")
+    plt.plot(preds, label="预测收盘价", color="red", linestyle="--")
     plt.title("真实 vs 预测 收盘价")
     plt.xlabel("时间步")
     plt.ylabel("收盘价")
@@ -141,13 +158,15 @@ def plot_predictions(model, dataset, device, num_points=200):
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    df = read_stock_data('D:\lc\githubCode\DeepQuant\data\pingan_bank_201807.csv')  # 替换为你的CSV文件路径
+    df = read_stock_data(
+        "D:\lc\githubCode\DeepQuant\data\pingan_bank_201807.csv"
+    )  # 替换为你的CSV文件路径
 
     # 数据集类
     # X, y = generate_sine_data(num_samples=2000, seq_len=10, num_features=5)
     # dataset = SyntheticDataset(X, y)
-    dataset = StockDataset_earning(df, seq_len=10, target='Close', pred_horizon=1)
-    # dataset = StockDataset_val(df, seq_len=60, target='Close', pred_horizon=1)
+    dataset = StockDataset_ret(df, seq_len=10, target="Close", pred_horizon=1)
+    # dataset = StockDataset_close(df, seq_len=60, target='Close', pred_horizon=1)
     print(f"len(dataset)={len(dataset)}")
 
     # 训练模型
@@ -159,7 +178,9 @@ if __name__ == "__main__":
 
     # 预测例子（取最后一段数据预测下一天）
     model.eval()
-    last_seq = torch.tensor(df[['Open', 'High', 'Low', 'Close', 'Volume']].values[-30:], dtype=torch.float32)
+    last_seq = torch.tensor(
+        df[["Open", "High", "Low", "Close", "Volume"]].values[-30:], dtype=torch.float32
+    )
     pred = model(last_seq.unsqueeze(0).to(device))
 
     print("Predicted next close:", pred.item())

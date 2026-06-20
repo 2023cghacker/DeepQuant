@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
 import torch
 import torch.nn as nn
 import pandas as pd
@@ -8,10 +14,9 @@ from torch.utils.data import Dataset
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import matplotlib.dates as mdates
 
-# 自定义模块导入
 from data_processor.DataPlot import read_stock_data
-from strategy.StockDataset import StockDataset_binary
-from strategy.Mlp import StockMLP
+from strategy.deeplearning.StockDataset import StockDataset_binary
+from strategy.deeplearning.Mlp import StockMLP
 
 
 class BaseBacktester:
