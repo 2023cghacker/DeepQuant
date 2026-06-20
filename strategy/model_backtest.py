@@ -57,7 +57,6 @@ def backtest_model(model, test_dataset, device, threshold=0.5):
         for x, y in test_dataset:
             # 增加batch维度（模型输入需为[batch, seq_len, num_features]）
             x = x.unsqueeze(0).to(device)
-            print(f"y={y}")
             # 预测概率
             prob = model(x).item()
             # 转换为标签
@@ -78,13 +77,14 @@ def backtest_model(model, test_dataset, device, threshold=0.5):
     return np.array(pred_probs), np.array(pred_labels), np.array(true_labels), metrics
 
 
-def plot_backtest_result(true_labels, pred_labels, num_points=300):
+def plot_backtest_result(true_labels, pred_labels, num_points=300, return_fig=False):
     """
     绘制回测结果对比图（真实涨跌 vs 预测涨跌）
     参数：
     true_labels: 真实标签数组
     pred_labels: 预测标签数组
     num_points: 绘制最后N个点（避免图过于拥挤）
+    return_fig: 为 True 时返回 Figure 对象（供 GUI 嵌入），否则弹窗显示
     """
     plt.rcParams['font.sans-serif'] = ['SimHei']  # 中文支持
     plt.rcParams['axes.unicode_minus'] = False  # 负号显示
@@ -131,6 +131,8 @@ def plot_backtest_result(true_labels, pred_labels, num_points=300):
     ax2.set_yticklabels(['错误', '正确'])
 
     plt.tight_layout()
+    if return_fig:
+        return fig
     plt.show()
 
 

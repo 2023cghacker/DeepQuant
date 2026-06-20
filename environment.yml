@@ -1,0 +1,17 @@
+name: deepquant
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - tk
+  - pip:
+      - numpy
+      - pandas
+      - matplotlib
+      - scikit-learn
+      - scipy
+      - seaborn
+      - torch
+      - mplfinance
+      - tushare

@@ -304,7 +304,7 @@ class BaseBacktester:
 
         print("=" * 60)
 
-    def plot_results(self, num_points=None):
+    def plot_results(self, num_points=None, return_fig=False):
         """绘制回测结果可视化图表，其中价格部分使用K线图展示"""
         if self.portfolio is None or self.portfolio.empty:
             raise ValueError("请先执行回测")
@@ -383,6 +383,8 @@ class BaseBacktester:
         ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
 
         plt.tight_layout()
+        if return_fig:
+            return fig
         plt.show()
 
     def save_results(self):

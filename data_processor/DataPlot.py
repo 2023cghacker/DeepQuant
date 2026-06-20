@@ -26,7 +26,7 @@ def read_stock_data(csv_file):
     return df
 
 
-def plot_kline(df, start_date, end_date, title="股票K线图"):
+def plot_kline(df, start_date, end_date, title="股票K线图", return_fig=False):
     """
     绘制指定日期范围内的K线图
 
@@ -35,6 +35,7 @@ def plot_kline(df, start_date, end_date, title="股票K线图"):
     start_date: 开始日期，格式如'2018-07-01'
     end_date: 结束日期，格式如'2018-07-31'
     title: 图表标题
+    return_fig: 为 True 时返回 Figure 对象（供 GUI 嵌入），否则弹窗显示
     """
     # 重命名列以符合mplfinance的要求
     df = df.rename(columns={
@@ -53,11 +54,8 @@ def plot_kline(df, start_date, end_date, title="股票K线图"):
     df_filtered = df.loc[mask]
 
     if df_filtered.empty:
-        print("指定日期范围内没有数据！")
-        return
+        raise ValueError("指定日期范围内没有数据")
 
-    # 设置K线图样式
-    plt.style.use('seaborn-v0_8-whitegrid')
     my_color = mpf.make_marketcolors(
         up='red',  # 上涨K线颜色
         down='green',  # 下跌K线颜色
@@ -71,20 +69,30 @@ def plot_kline(df, start_date, end_date, title="股票K线图"):
         figcolor='white'
     )
 
-    # 绘制K线图
-    # fig, ax = plt.subplots(figsize=(12, 8))
-    mpf.plot(
-        df_filtered,
-        type='candle',  # 蜡烛图类型
-        mav=(5, 10, 20),  # 5日、10日、20日均线
-        volume=True,  # 显示成交量
+    plot_kwargs = dict(
+        type='candle',
+        mav=(5, 10, 20),
+        volume=True,
         title=title,
         style=my_style,
-        show_nontrading=False,  # 不显示非交易日
-        figratio=(12, 8),
-        tight_layout=True
+        show_nontrading=False,
     )
+    if return_fig:
+        fig, _ = mpf.plot(
+            df_filtered,
+            **plot_kwargs,
+            returnfig=True,
+            figsize=(10, 6),
+        )
+        return fig
 
+    plt.style.use('seaborn-v0_8-whitegrid')
+    mpf.plot(
+        df_filtered,
+        **plot_kwargs,
+        figratio=(12, 8),
+        tight_layout=True,
+    )
     plt.show()
 
 
