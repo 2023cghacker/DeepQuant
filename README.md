@@ -1,13 +1,10 @@
+
+
 # 📈 DeepQuant
 
 > 基于 PyTorch 的 A 股量化研究：**数据获取 → 深度学习建模 → 预测评估 → 策略模拟**
 
-```
-  data/              strategy/                    output/                 View
-  行情 CSV    →    deeplearning  训练 & 评估   →   models/     →    K线 / 预测
-                   backtest      交易模拟      →   backtests/  →    策略回测
-                                                reports/      →    其他分析
-```
+![DeepQuant intro](data/intro.png)
 
 ---
 
