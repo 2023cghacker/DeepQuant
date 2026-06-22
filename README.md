@@ -144,20 +144,9 @@ python strategy/backtest/BacktestBase.py         # 策略交易模拟
 
 `view.py` 是可视化 GUI，绘图与回测逻辑复用 `data_processor`、`strategy/deeplearning`、`strategy/backtest`，与命令行看到的是同一套结果。
 
----
-
-## 📋 数据格式
-
-CSV 需包含 Tushare 日线字段：
-
-`trade_date` · `open` · `high` · `low` · `close` · `pre_close` · `change` · `pct_chg` · `vol` · `amount`
 
 ---
 
 ## 📄 License
 
 Apache License 2.0
-
-## ⚠️ 免责声明
-
-本项目仅供学习与研究，不构成任何投资建议。股市有风险，入市需谨慎。
