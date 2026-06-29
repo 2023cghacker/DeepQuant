@@ -1,3 +1,4 @@
+from stocklstm import StockLSTM
 import sys
 from pathlib import Path
 
@@ -8,65 +9,13 @@ from torch.utils.data import DataLoader, random_split
 import matplotlib.pyplot as plt
 from data_processor.DataPlot import read_stock_data
 import numpy as np
-
-from strategy.deeplearning.StockDataset import StockDataset_ret, StockDataset_close
-
-# =====================
-# 模型定义
-# =====================
+from strategy.deeplearning.StockDataset import (
+    StockDataset_ret,
+    StockDataset_close,
+    StockDataset_binary,
+)
 import torch
 import torch.nn as nn
-
-
-import torch
-import torch.nn as nn
-
-from tests.SyntheticDataset import generate_sine_data, SyntheticDataset
-
-
-class StockLSTM(nn.Module):
-    def __init__(
-        self,
-        input_size=5,
-        hidden_size=128,
-        num_layers=3,
-        output_size=1,
-        dropout=0.3,
-        bidirectional=True,
-    ):
-        super(StockLSTM, self).__init__()
-        self.lstm = nn.LSTM(
-            input_size=input_size,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            dropout=dropout,  # 在 LSTM 层之间加 Dropout，防止过拟合
-            batch_first=True,
-            bidirectional=bidirectional,
-        )
-        lstm_out_size = hidden_size * (2 if bidirectional else 1)
-
-        # 对 LSTM 输出做归一化
-        self.norm1 = nn.LayerNorm(lstm_out_size)
-
-        # 全连接层 + ReLU + 归一化
-        self.fc1 = nn.Linear(lstm_out_size, lstm_out_size // 2)
-        self.relu = nn.ReLU()
-        self.norm2 = nn.LayerNorm(lstm_out_size // 2)
-
-        self.fc2 = nn.Linear(lstm_out_size // 2, output_size)
-
-    def forward(self, x):
-        # x: [batch, seq_len, input_size]
-        out, _ = self.lstm(x)  # [batch, seq_len, hidden_size*2]
-        out = out[:, -1, :]  # 取最后时间步的输出
-        out = self.norm1(out)
-
-        out = self.fc1(out)
-        out = self.relu(out)
-        out = self.norm2(out)
-
-        out = self.fc2(out)  # [batch, 1]
-        return out.squeeze(-1)  # [batch]
 
 
 # =====================
@@ -158,29 +107,25 @@ def plot_predictions(model, dataset, device, num_points=200):
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    df = read_stock_data(
-        "D:\lc\githubCode\DeepQuant\data\pingan_bank_201807.csv"
-    )  # 替换为你的CSV文件路径
 
-    # 数据集类
-    # X, y = generate_sine_data(num_samples=2000, seq_len=10, num_features=5)
-    # dataset = SyntheticDataset(X, y)
-    dataset = StockDataset_ret(df, seq_len=10, target="Close", pred_horizon=1)
-    # dataset = StockDataset_close(df, seq_len=60, target='Close', pred_horizon=1)
-    print(f"len(dataset)={len(dataset)}")
+    # 加载数据集
+    print(f"\n[-] loading dataset...")
+    df = read_stock_data(r"data\raw\000001_SZ_20250701_20260601_ind.csv")
+    # df = read_stock_data(r"data\raw\000001_SZ_20250701_20260601_ohlcv.csv")
+    seq_len = 20  # 时间序列长度
+    # dataset = StockDataset_ret(df, seq_len=seq_len, target="close", pred_horizon=1)
+    dataset = StockDataset_binary(df, seq_len=seq_len, target="close", pred_horizon=1)
+    dim = dataset[0][0].shape[1]  # 单个时间步特征维度数
+    print(f"[√] dataset loaded: dataset.len={len(dataset)} x.shape={seq_len}*{dim}")
+
+    # 加载模型
+    model = StockLSTM(input_size=dim).to(device)
+    print(f"\n[√] model = {model}")
 
     # 训练模型
-    model = StockLSTM(input_size=5).to(device)
-    train_model(dataset, batch_size=8, epochs=50, lr=1e-4)
+    print(f"\n[-] training...")
+    train_model(dataset, batch_size=8, epochs=100, lr=1e-4)
+    print(f"[√] training finished ")
 
     # 绘制真实 vs 预测
-    plot_predictions(model, dataset, device, num_points=200)
-
-    # 预测例子（取最后一段数据预测下一天）
-    model.eval()
-    last_seq = torch.tensor(
-        df[["Open", "High", "Low", "Close", "Volume"]].values[-30:], dtype=torch.float32
-    )
-    pred = model(last_seq.unsqueeze(0).to(device))
-
-    print("Predicted next close:", pred.item())
+    plot_predictions(model, dataset, device, num_points=50)

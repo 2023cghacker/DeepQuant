@@ -25,7 +25,7 @@ plt.rcParams["axes.unicode_minus"] = False
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-DATA_DIR = ROOT / "data"
+DATA_DIR = ROOT / "data/raw"
 OUTPUT_DIR = ROOT / "output"
 
 

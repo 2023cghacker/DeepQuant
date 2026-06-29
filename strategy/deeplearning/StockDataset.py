@@ -2,6 +2,37 @@ from torch.utils.data import Dataset
 import torch
 import numpy as np
 
+ind_list = [
+    "close",
+    "turnover_rate",
+    "turnover_rate_f",
+    "volume_ratio",
+    "pe",
+    "pe_ttm",
+    "pb",
+    "ps",
+    "ps_ttm",
+    "dv_ratio",
+    "dv_ttm",
+    "total_share",
+    "float_share",
+    "free_share",
+    "total_mv",
+    "circ_mv",
+]
+
+ohlcv_list = [
+    "open",
+    "high",
+    "low",
+    "close",
+    "pre_close",
+    "change",
+    "pct_chg",
+    "vol",
+    "amount",
+]
+
 
 class StockDataset_close(Dataset):
     def __init__(self, df, seq_len=30, target="Close", pred_horizon=1):
